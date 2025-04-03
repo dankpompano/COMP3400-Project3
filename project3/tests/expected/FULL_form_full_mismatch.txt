@@ -1,0 +1,57 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++
+METHOD: POST
+URI: cgi-bin/show.cgi
+QUERY: (null)
+VERSION: HTTP/1.0
+SIZE: 0
+BOUNDARY: ------WebKitFormBoundary4XdOKY1sHBOLMWEE
+BODY [each line ends in \r\n]:
+--------WebKitFormBoundary4XdOKY1sHBOLMWEE
+Content-Disposition: form-data; name="db"
+
+exp.txt
+--------WebKitFormBoundary4XdOKY1sHBOLMWEE
+Content-Disposition: form-data; name="hash"
+
+f1f4b8705111a70c176a942d26f765fb548e2be9
+--------WebKitFormBoundary4XdOKY1sHBOLMWEE
+Content-Disposition: form-data; name="record"
+
+3
+--------WebKitFormBoundary4XdOKY1sHBOLMWEE--
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+++++++++++++++++++++++++++++
+Client received
+++++++++++++++++++++++++++++
+HTTP/1.0 200 OK
+Content-Type: text/html; charset=UTF-8
+Content-Length: 823
+
+<html lang="en">
+  <head>
+    <title>File Hash Database</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous" />
+  </head>
+
+  <!-- Environment variables:
+       db: exp.txt
+       record: 3
+       hash: f1f4b8705111a70c176a942d26f765fb548e2be9
+       query: (null)
+    -->
+
+  <body>
+    <div class="container">
+      <br />
+      <h2 class="mb-0">Database Records</h2>
+      <div class="row">
+        <div class="col py-md-2 border bg-light">PART_shutdown.txt</div>
+        <div class="col py-md-2 border bg-light">61acdfd793293502dcb70372530817898f7a4c02 <span class="badge badge-danger">MISMATCH</span></div>
+      </div>
+    </div>
+  </body>
+
+</html>
+++++++++++++++++++++++++++++

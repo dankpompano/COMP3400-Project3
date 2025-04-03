@@ -1,0 +1,18 @@
+<html lang="en">
+  <head>
+    <title>File Hash Database</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous" />
+  </head>
+
+  <body>
+    <div class="container">
+      <br />
+      <h2 class="mb-0">Database Records</h2>
+      <div class="row">
+        <div class="col py-md-2 border bg-light">upload.html</div>
+        <div class="col py-md-2 border bg-light">84954447e5aa934fd9de13590f00ba9ced10b521</div>
+      </div>
+    </div>
+  </body>
+
+</html>

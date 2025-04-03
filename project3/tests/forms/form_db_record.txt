@@ -1,0 +1,9 @@
+--------WebKitFormBoundary4XdOKY1sHBOLMWEE
+Content-Disposition: form-data; name="db"
+
+exp.txt
+--------WebKitFormBoundary4XdOKY1sHBOLMWEE
+Content-Disposition: form-data; name="record"
+
+2
+--------WebKitFormBoundary4XdOKY1sHBOLMWEE--

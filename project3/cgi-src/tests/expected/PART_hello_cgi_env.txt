@@ -1,0 +1,10 @@
+<html>
+<head>
+  <title>Hello world demo</title>
+</head>
+
+<body>
+<h2>Hello world!</h2>
+<p>Query string: db=data.txt&all=true</p>
+</body>
+</html>

@@ -1,0 +1,13 @@
+--------WebKitFormBoundary4XdOKY1sHBOLMWEE
+Content-Disposition: form-data; name="db"
+
+exp.txt
+--------WebKitFormBoundary4XdOKY1sHBOLMWEE
+Content-Disposition: form-data; name="hash"
+
+f1f4b8705111a70c176a942d26f765fb548e2be9
+--------WebKitFormBoundary4XdOKY1sHBOLMWEE
+Content-Disposition: form-data; name="record"
+
+3
+--------WebKitFormBoundary4XdOKY1sHBOLMWEE--

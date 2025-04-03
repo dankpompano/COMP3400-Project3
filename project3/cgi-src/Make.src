@@ -1,0 +1,5 @@
+# -*- makefile -*-
+
+# List all of your CGI files here on a single line separated by a space
+# Example: CGI=a.cgi b.cgi c.cgi
+CGI=hello.cgi shutdown.cgi show.cgi

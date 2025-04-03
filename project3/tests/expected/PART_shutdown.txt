@@ -1,0 +1,28 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++
+METHOD: GET
+URI: cgi-bin/shutdown.cgi
+QUERY: (null)
+VERSION: HTTP/1.1
+SIZE: 0
+BOUNDARY: (null)
+BODY [each line ends in \r\n]:
+(null)
++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+++++++++++++++++++++++++++++
+Client received
+++++++++++++++++++++++++++++
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=UTF-8
+Content-Length: 99
+Connection: close
+
+<html>
+<head>
+  <title>Success!</title>
+</head>
+<body>
+  <p>Server has stopped</p>
+</body>
+</html>
+++++++++++++++++++++++++++++

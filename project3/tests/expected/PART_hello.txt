@@ -1,0 +1,28 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++
+METHOD: GET
+URI: cgi-bin/hello.cgi
+QUERY: (null)
+VERSION: HTTP/1.0
+SIZE: 0
+BOUNDARY: (null)
+BODY [each line ends in \r\n]:
+(null)
++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+++++++++++++++++++++++++++++
+Client received
+++++++++++++++++++++++++++++
+HTTP/1.0 200 OK
+Content-Type: text/html; charset=UTF-8
+Content-Length: 102
+
+<html>
+<head>
+  <title>Hello world demo</title>
+</head>
+
+<body>
+<h2>Hello world!</h2>
+</body>
+</html>
+++++++++++++++++++++++++++++

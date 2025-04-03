@@ -1,0 +1,16 @@
+# list of integration tests
+#  format: run_test <TAG> <ARGS>
+#    <TAG>      used as the root for all filenames (i.e., "expected/$TAG.txt")
+#    <ENV>      environment variables as "K1=V1 K2=V2" key pairs
+
+run_test    hello.cgi      PART_hello_cgi          ""
+run_test    hello.cgi      PART_hello_cgi_env      "QUERY_STRING db=data.txt&all=true"
+run_test    shutdown.cgi   PART_shutdown           ""
+run_test    show.cgi       PART_show_all           ""
+run_test    show.cgi       MIN_db_env_all          "db exp.txt"
+run_test    show.cgi       MIN_db_query_all        "QUERY_STRING db=exp.txt"
+run_test    show.cgi       MIN_record_env          "record 3"
+run_test    show.cgi       MIN_record_query        "QUERY_STRING record=3"
+run_test    show.cgi       MIN_db_record           "QUERY_STRING db=exp.txt&record=2"
+run_test    show.cgi       MIN_query_hash          "QUERY_STRING db=exp.txt&record=2&hash=9e5543354d4592db8272b3c3e14953770df88ba3"
+run_test    show.cgi       MIN_query_mismatch      "QUERY_STRING db=exp.txt&record=1&hash=9e5543354d4592db8272b3c3e14953770df88ba3"

@@ -1,0 +1,16 @@
+# list of integration tests
+#  format: run_test <TAG> <ARGS>
+#    <TAG>      used as the root for all filenames (i.e., "expected/$TAG.txt")
+#    <ARGS>     command-line arguments to test
+
+run_test    PART_hello              "GET /cgi-bin/hello.cgi HTTP/1.0"
+run_test    PART_shutdown           "GET /cgi-bin/shutdown.cgi HTTP/1.1"
+run_test    PART_show_all           "GET /cgi-bin/show.cgi HTTP/1.0"
+run_test    FULL_query_record       "GET /cgi-bin/show.cgi?record=3 HTTP/1.1"
+run_test    FULL_query_db           "GET /cgi-bin/show.cgi?db=exp.txt&record=2 HTTP/1.1"
+run_test    FULL_query_mismatch     "GET /cgi-bin/show.cgi?db=exp.txt&record=1&hash=9e5543354d4592db8272b3c3e14953770df88ba3 HTTP/1.0"
+run_test    FULL_form_db            "POST /cgi-bin/show.cgi HTTP/1.0 forms/form_db.txt"
+run_test    FULL_form_db_record     "POST /cgi-bin/show.cgi HTTP/1.1 forms/form_db_record.txt"
+run_test    FULL_form_full          "POST /cgi-bin/show.cgi HTTP/1.1 forms/form_full.txt"
+run_test    FULL_form_full_mismatch "POST /cgi-bin/show.cgi HTTP/1.0 forms/form_full_mismatch.txt"
+run_test    FULL_form_record        "POST /cgi-bin/show.cgi HTTP/1.1 forms/form_record.txt"

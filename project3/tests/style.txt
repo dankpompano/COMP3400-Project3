@@ -1,0 +1,11 @@
+base.h                         pass
+cgi_response.c                 FAIL (see ckstyle/cgi_response.c.diff for details)
+cgi_response.h                 pass
+hello.c                        pass
+show.c                         FAIL (see ckstyle/show.c.diff for details)
+shutdown.c                     FAIL (see ckstyle/shutdown.c.diff for details)
+main.c                         FAIL (see ckstyle/main.c.diff for details)
+server.c                       FAIL (see ckstyle/server.c.diff for details)
+server.h                       pass
+Code that does not adhere to GNU standards will not be accepted.
+You must fix these files before submission.
