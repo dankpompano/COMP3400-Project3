@@ -53,26 +53,36 @@ main ()
   //    </body>
   FILE *file = fopen("data/data.txt", "r");
   if(file == NULL)
+  {
     perror("Error opening data/data.txt");
     return;
+  }
     
-    printf("  <body>");
+    
+    printf("  <body>\n");
     printf("    <div class=\"container\">\n");
     printf("      <br />\n");
     printf("      <h2 class=\"mb-0\">Database Records</h2>\n");
     printf("      <div class=\"row\">\n");
     
-   
-    char fileName[100];
-    char hash[200];
-    int firstClass = 0; //boolean for if it is the first class name to appear in the output
+    char buffer[1024];
+    char fileName[100]; //file name such as index.html
+    char hashInput[200]; //hash from the file
+    int firstRow = 1; //boolean for if it is the first class name to appear in the output. in this case it is "row".
     
-    while(fscanf(file, "%s", hash) == 1)
+    while(fscanf(file, "%s", hashInput) == 1) 
     {
-      fscanf(file, "%s", fileName);
-      printf("<div class=\"col py-md-2 border bg-light\">%s</div>\n", fileName);
-      printf("<div class=\"col py-md-2 border bg-light\">%s</div>\n",hash);
+      if(firstRow)
+        firstRow = 0;
+      else
+        printf("        <div class=\"w-100\"></div>\n");
+        fscanf(file, "%s", fileName);
+        printf("        <div class=\"col py-md-2 border bg-light\">%s</div>\n", fileName);
+        printf("        <div class=\"col py-md-2 border bg-light\">%s</div>\n", hashInput);
     }
+    printf("      </div>\n");
+    printf("    </div>\n");
+    printf("  </body>\n");
     fclose(file);
     
   // TODO [MIN]: Once you have the basic structure working, extend it to
