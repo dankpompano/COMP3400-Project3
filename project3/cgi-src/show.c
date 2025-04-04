@@ -19,11 +19,10 @@ main ()
   printf ("  </head>\n\n");
   
   // These variables can be read from the environment using getenv().
-  char *db = getenv("DB");
-  char *record = getenv("RECORD");
-  char *hash = getenv("HASH");
+  char *db = getenv("db");
+  char *record = getenv("record");
+  char *hash = getenv("hash");
   char *query = getenv("QUERY_STRING");
-
   // This is an HTML comment. It's useful for debugging to see if your
   // environment variables got through.
   printf ("  <!-- Environment variables:\n");
@@ -32,34 +31,6 @@ main ()
   printf ("       hash: %s\n", hash);
   printf ("       query: %s\n", query);
   printf ("    -->\n\n");
-
-  // If query exist loop through and find everything we need.
-  // Example query: db=foo.txt&record=2&hash=9e5543354d4592db8272b3c3e14953770df88ba3
-  if (query != NULL) {
-  // Grab a token for each & + 1
-  char *token = strtok(query, "&");
-  while (token != NULL) {
-    // Take the token and split it so we can figure out what it is. Splitting on the = symbol allow us to seperate it from the value.
-    // We do this because we don't know what order or what were actually getting.
-    // We could get just record, or just the hash so we have to search specifically for each field.
-    char *equalSign = strchr(token, '=');// Can't use token here otherwise it will override the other token function pointer.
-    if (equalSign != NULL) { // equalsign is the pointer for where the key name ends.
-        *equalSign = '\0'; // split key and value
-        char *key = token;
-        char *value = equalSign + 1;
-
-        // Set variables based on what key was read in.
-        if (strcmp(key, "db") == 0)
-            db = value;
-        else if (strcmp(key, "record") == 0)
-            record = value;
-        else if (strcmp(key, "hash") == 0)
-            hash = value;
-      }
-      token = strtok(NULL, "&");
-      *equalSign = '='; // Readd the '=' sign
-    }
-  }
 
   // TODO [PART]: Read the data/data.txt file and produce an HTML table
   // to match the output in the cgi-src/tests/expected/PART_show_all.txt
@@ -80,75 +51,84 @@ main ()
   //        </div>
   //      </div>
   //    </body>
-
-  FILE *file;
-  if(db != NULL){
-    char fileName[100] = "data/";
-    strcat(fileName, db);
-    file = fopen(fileName, "r");
-  } else{
-    file = fopen("data/data.txt", "r");
+  
+  if(query != NULL)
+  {
+    char *key = strtok(query, "="); //first one
+    while (key != NULL) {
+    // Take the token and split it so we can figure out what it is. Splitting on the = symbol allow us to seperate it from the value.
+    // We do this because we don't know what order or what were actually getting.
+    // We could get just record, or just the hash so we have to search specifically for each field.
+    char *value = strtok(NULL, "&"); //second one
+        // Set variables based on what key was read in.
+        if (strcmp(key, "db") == 0)
+            db = value;
+        else if (strcmp(key, "record") == 0)
+            record = value;
+        else if (strcmp(key, "hash") == 0)
+            hash = value;
+      key = strtok(NULL, "=");
+    }
   }
-
+  
+  if(db == NULL)
+    db = "data.txt";
+  
+  char dbName[50] = "data/";
+  strcat(dbName, db);
+  FILE *file = fopen(dbName, "r");
   if(file == NULL)
   {
     perror("Error opening data/data.txt");
     return;
   }
-
-  printf("  <body>\n");
-  printf("    <div class=\"container\">\n");
-  printf("      <br />\n");
-  printf("      <h2 class=\"mb-0\">Database Records</h2>\n");
-  printf("      <div class=\"row\">\n");
-  
-  char buffer[1024];
-  char fileName[100]; //file name such as index.html
-  char hashInput[200]; //hash from the file
-  int firstRow = 1; //boolean for if it is the first class name to appear in the output. in this case it is "row".
-  
-  // Print only a single record.
-  if(record != NULL){
-    // Grab and ignore the first line
-    //fscanf(file, "%s", hashInput);
-
-    // Will always read in the the hashInput.
-    for(int attempts = 1; fscanf(file, "%s", hashInput) == 1 && attempts < atoi(record); attempts++){
-      fscanf(file, "%s", fileName);
-    }
-
-    fscanf(file, "%s", fileName);
-    printf("        <div class=\"col py-md-2 border bg-light\">%s</div>\n", fileName);
-
-    // Print hash statement.
-    if(hash != NULL && strcmp(hash, hashInput) != 0){
-      printf("        <div class=\"col py-md-2 border bg-light\">%s <span class=\"badge badge-danger\">MISMATCH</span></div>\n", hashInput);
-    } else {
-      printf("        <div class=\"col py-md-2 border bg-light\">%s</div>\n", hashInput);
-    }
-  } else{
-    // Print everything
-    while(fscanf(file, "%s", hashInput) == 1) 
+    
+    
+    printf("  <body>\n");
+    printf("    <div class=\"container\">\n");
+    printf("      <br />\n");
+    printf("      <h2 class=\"mb-0\">Database Records</h2>\n");
+    printf("      <div class=\"row\">\n");
+    
+    char buffer[1024];
+    char fileName[100]; //file name such as index.html
+    char hashInput[200]; //hash from the file
+    int i = 1; //boolean for if it is the first class name to appear in the output. in this case it is "row".
+    int checkFirst = 0;
+    
+    //CHECK RECORD
+    int checkRecord = -1;
+    if(record != NULL)
     {
-      if(firstRow)
-        firstRow = 0;
-      else {
-        printf("        <div class=\"w-100\"></div>\n");
-        fscanf(file, "%s", fileName);
-        printf("        <div class=\"col py-md-2 border bg-light\">%s</div>\n", fileName);
-      }
-      // Print hash statement.
-      if(hash != NULL && strcmp(hash, hashInput) != 0){
-        printf("        <div class=\"col py-md-2 border bg-light\">%s <span class=\"badge badge-danger\">MISMATCH</span></div>\n", hashInput);
-      } else {
-        printf("        <div class=\"col py-md-2 border bg-light\">%s</div>\n", hashInput);
-      }
+      checkRecord = atoi(record);
     }
-  }
-  printf("      </div>\n");
-  printf("    </div>\n");
-  printf("  </body>\n");
-  fclose(file);
+    
+    while(fscanf(file, "%s", hashInput) == 1) 
+    {  
+      fscanf(file, "%s", fileName);
+      if(checkRecord == -1 || i == checkRecord)
+      {
+        if(checkFirst != 0)
+          printf("        <div class=\"w-100\"></div>\n");
+        checkFirst++;
+        printf("        <div class=\"col py-md-2 border bg-light\">%s</div>\n", fileName);
+        
+        //CHECK HASH
+       if(hash != NULL && strcmp(hash, hashInput) != 0)
+        {
+          printf("        <div class=\"col py-md-2 border bg-light\">%s <span class=\"badge badge-danger\">MISMATCH</span></div>\n", hashInput);
+        } 
+        else 
+        {
+          printf("        <div class=\"col py-md-2 border bg-light\">%s</div>\n", hashInput);
+        }
+      }
+      ++i;
+    }
+    printf("      </div>\n");
+    printf("    </div>\n");
+    printf("  </body>\n");
+    fclose(file);
     
   // TODO [MIN]: Once you have the basic structure working, extend it to
   // read in environment variables (db, record, hash, and QUERY_STRING).
