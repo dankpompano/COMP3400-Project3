@@ -59,15 +59,85 @@ serve_request (int connfd)
   // files, you will need to pipe/fork/dup2/exec the program. Also, note that
   // the query string will need to be passed using an environment variable
   // called "QUERY_STRING".
-  char *response = html_response (uri, version);
-  write (connfd, response, strlen (response));
 
+  //char *response = html_response (uri, version);
+  char *response;
+
+  if(strstr(uri, "srv_root") != NULL){
+    response = body;
+  } else if(strstr(uri, "cgi-bin"))
+  {
+    // Create child
+    int pipe[2];
+    pid_t child_pid = fork ();
+
+    if (child_pid < 0)
+    { // Fork Failed
+      printf ("Fork Failed\n");
+      close (pipe[0]);
+      close (pipe[1]);
+      return EXIT_FAILURE;
+    }
+
+    if (child_pid == 0)
+    { // Child process
+      close (pipe[0]); // Close unused read end
+
+      // Redirect stdout to the write end of the pipe
+      dup2 (pipe[1], STDOUT_FILENO);
+      close (pipe[1]); // Close original write end
+
+      // Create the enviroment variable
+      char *QUERY_STRING[] = {query ,NULL};
+
+      // execlp replaces the current running process with a new process. In
+      // this case we are replacing it with the cgi uri which refers to the file we are calling
+      // Method is going to be an http request such as "GET" and will act as the argument.
+      // QUERY_STRING is the query being requested and combined with NULL so it will end.
+      execve (uri, method, QUERY_STRING);
+
+      // Should never get here as it should be in a new process.
+      // Only if execlp fails will you get here.
+      printf ("execlp failed\n");
+      exit (EXIT_FAILURE);
+    }
+    close (pipe[1]); // Parent does not need to write.
+
+    // Wait for the child to respond.
+    waitpid (child_pid, NULL, 0); // wait for child
+
+    // Read in child response.
+    response = malloc (sizeof (char) * 2056);
+    size_t bytes = read (pipe[0], response, 2055);
+
+    // Check if it was successfully read in.
+    if(bytes == -1){
+      perror("Failed to read in child");
+    }
+
+    // Add null character to the end.
+    response[bytes] = '\0';
+    close (pipe[0]);
+  }
+
+  write (connfd, response, strlen (response));
+  free(response);
+
+  // TODO [PART]: If the URI is for the shutdown.cgi file, kill the current
+  // process with the SIGUSR1 signal.
+    
+  if(uri == "cgi-bin/shutdown.cgi")
+    kill(connfd,"SIGUSR1");
+
+  // Close the connection.
   shutdown (connfd, SHUT_RDWR);
   close (connfd);
 
-  // Clean up variables and close the connection
+  // Clean up variables.
   if (method != NULL)
     free (method);
+  if (uri != NULL)
+    free (uri);
   if (query != NULL)
     free (query);
   if (boundary != NULL)
@@ -75,13 +145,5 @@ serve_request (int connfd)
   if (body != NULL)
     free (body);
 
-  // TODO [PART]: If the URI is for the shutdown.cgi file, kill the current
-  // process with the SIGUSR1 signal.
-  if (uri != NULL)
-    free (uri);
-    
-  if(uri == "cgi-bin/shutdown.cgi")
-    kill(connfd,"SIGUSR1");
-    
   return;
 }
