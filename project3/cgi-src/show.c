@@ -80,7 +80,16 @@ main ()
   //        </div>
   //      </div>
   //    </body>
-  FILE *file = fopen("data/data.txt", "r");
+
+  FILE *file;
+  if(db != NULL){
+    char fileName[100] = "data/";
+    strcat(fileName, db);
+    file = fopen(fileName, "r");
+  } else{
+    file = fopen("data/data.txt", "r");
+  }
+
   if(file == NULL)
   {
     perror("Error opening data/data.txt");
@@ -100,18 +109,20 @@ main ()
   
   // Print only a single record.
   if(record != NULL){
-    for(int attempts = 0; fscanf(file, "%s", hashInput) == 1 && attempts < record; attempts++){
+    // Grab and ignore the first line
+    //fscanf(file, "%s", hashInput);
+
+    // Will always read in the the hashInput.
+    for(int attempts = 1; fscanf(file, "%s", hashInput) == 1 && attempts < atoi(record); attempts++){
       fscanf(file, "%s", fileName);
     }
 
-    if(1){
-      fscanf(file, "%s", fileName);
-      printf("        <div class=\"col py-md-2 border bg-light\">%s</div>\n", fileName);
-    }
-    
+    fscanf(file, "%s", fileName);
+    printf("        <div class=\"col py-md-2 border bg-light\">%s</div>\n", fileName);
+
     // Print hash statement.
     if(hash != NULL && strcmp(hash, hashInput) != 0){
-      printf("        <div class=\"col py-md-2 border bg-dlight\">%s</div><span class=\"badge badge-danger\">MISMATCH</span>\n", hashInput);
+      printf("        <div class=\"col py-md-2 border bg-light\">%s <span class=\"badge badge-danger\">MISMATCH</span></div>\n", hashInput);
     } else {
       printf("        <div class=\"col py-md-2 border bg-light\">%s</div>\n", hashInput);
     }
@@ -128,7 +139,7 @@ main ()
       }
       // Print hash statement.
       if(hash != NULL && strcmp(hash, hashInput) != 0){
-        printf("        <div class=\"col py-md-2 border bg-light\">%s</div><span class=\"badge badge-danger\">MISMATCH</span>\n", hashInput);
+        printf("        <div class=\"col py-md-2 border bg-light\">%s <span class=\"badge badge-danger\">MISMATCH</span></div>\n", hashInput);
       } else {
         printf("        <div class=\"col py-md-2 border bg-light\">%s</div>\n", hashInput);
       }
