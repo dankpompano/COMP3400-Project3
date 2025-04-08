@@ -74,7 +74,6 @@ cgi_response (char *uri, char *version, char *method, char *query,
 
     // Redirect stdout to the write end of the pipe
     dup2 (pipefd[1], STDOUT_FILENO);
-    close (pipefd[1]); // Close original write end
 
     // Create the enviroment variable
     char QUERY_STRING[1024];
@@ -91,7 +90,7 @@ cgi_response (char *uri, char *version, char *method, char *query,
 
     // Prepare arguments and environmentArguments
     char *arguments[] = { uri, NULL }; // We just need the uri as the argument.
-    char *environmentArguments[] = {query ,NULL};  // Null at the end of both arguments to represent when they end.
+    char *environmentArguments[] = {QUERY_STRING ,NULL};  // Null at the end of both arguments to represent when they end.
 
     // execlp replaces the current running process with a new process. In
     // this case we are replacing it with the cgi uri which refers to the file we are calling
@@ -123,9 +122,6 @@ cgi_response (char *uri, char *version, char *method, char *query,
   // Add null character to the end.
   response[totalBytes] = '\0';
   close (pipefd[0]);
-
-  // Wait for the child to finish execution.
-  waitpid (child_pid, NULL, 0); // wait for child
 
   // We have our response (body) from the program but it is missing the headers.
   // Gather the size of the body
