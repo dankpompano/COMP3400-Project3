@@ -47,59 +47,118 @@ cgi_response (char *uri, char *version, char *method, char *query,
   //   "</html>\n"
   
   // Create child
-  int pipe[2];
-  pid_t child_pid = fork ();
+  int pipefd[2];
 
-  if (child_pid < 0)
-  { // Fork Failed
-    printf ("Fork Failed\n");
-    close (pipe[0]);
-    close (pipe[1]);
-    return EXIT_FAILURE;
+  // Turn pipefd into an actual pipe.
+  if (pipe(pipefd) == -1) {
+    perror("Pipe failed to create.");
+    return NULL;
   }
 
+  pid_t child_pid = fork ();
+
+  // Check if fork failed
+  if (child_pid < 0)
+  {
+    perror("Forking failed within pipe.");
+    close(pipefd[0]);
+    close(pipefd[1]);
+    return NULL;
+  }
+
+  // Child process
   if (child_pid == 0)
-  { // Child process
-    close (pipe[0]); // Close unused read end
+  {
+    // Close unused read end
+    close (pipefd[0]); 
 
     // Redirect stdout to the write end of the pipe
-    dup2 (pipe[1], STDOUT_FILENO);
-    close (pipe[1]); // Close original write end
+    dup2 (pipefd[1], STDOUT_FILENO);
+    close (pipefd[1]); // Close original write end
 
     // Create the enviroment variable
-    char *QUERY_STRING[] = {query ,NULL};
+    char QUERY_STRING[1024];
+
+    if(strcmp(method, "GET") == 0){ // GET method environmentArgument
+      snprintf(QUERY_STRING, sizeof(QUERY_STRING), "QUERY_STRING=%s", query); // Copy the query into the environment arguments.
+    } else if (strcmp(method, "POST") == 0) // POST method environmentArgument
+    {
+      
+    } else {
+      perror("Invalid Method.");
+      exit(1);
+    }
+
+    // Prepare arguments and environmentArguments
+    char *arguments[] = { uri, NULL }; // We just need the uri as the argument.
+    char *environmentArguments[] = {query ,NULL};  // Null at the end of both arguments to represent when they end.
 
     // execlp replaces the current running process with a new process. In
     // this case we are replacing it with the cgi uri which refers to the file we are calling
-    // Method is going to be an http request such as "GET" and will act as the argument.
-    // QUERY_STRING is the query being requested and combined with NULL so it will end.
-    execve (uri, method, QUERY_STRING);
+    // The first parameter is the path to the binary that we want to execute.
+    // The second parameter are the arguments we are giving to it including the command name.
+    // The third parameter are the environment variables being added onto it.
+    execve (uri, arguments, environmentArguments);
 
     // Should never get here as it should be in a new process.
     // Only if execlp fails will you get here.
-    printf ("execlp failed\n");
-    exit (EXIT_FAILURE);
+    perror ("execve failed");
+    return NULL;
   }
-  close (pipe[1]); // Parent does not need to write.
 
-  // Wait for the child to respond.
-  waitpid (child_pid, NULL, 0); // wait for child
+  // Parent process starts here.
+  close (pipefd[1]); // Parent does not need to write.
 
   // Read in child response.
-  char *response = malloc (sizeof (char) * 2056);
-  size_t bytes = read (pipe[0], response, 2055);
+  char *response = malloc (sizeof(char) * BUFFER_LENGTH);
+  size_t totalBytes = 0;
+  size_t currentBytes = 0;
 
-  // Check if it was successfully read in.
-  if(bytes == -1){
-    perror("Failed to read in child");
+  // Loop through until there is nothing left to read. 
+  // Increment response pointer location by totalbytes to get the correct position.
+  while ((currentBytes = read(pipefd[0], response + totalBytes, BUFFER_LENGTH - totalBytes - 1)) > 0) {
+    totalBytes += currentBytes;
   }
 
   // Add null character to the end.
-  response[bytes] = '\0';
-  close (pipe[0]);
+  response[totalBytes] = '\0';
+  close (pipefd[0]);
 
-  return response;
+  // Wait for the child to finish execution.
+  waitpid (child_pid, NULL, 0); // wait for child
+
+  // We have our response (body) from the program but it is missing the headers.
+  // Gather the size of the body
+  size_t content_length = totalBytes;
+
+  // Calculate the total length of the header and body
+  char *final_response = malloc(sizeof(char) * (totalBytes + 1024)); // Extra space for the headers
+  if (final_response == NULL) {
+      perror("Failed to allocate memory for final response");
+      return NULL;
+  }
+
+  // If 1.1 then add connection closed.
+  char* versionExtra = "";
+  if(strcmp(version, "HTTP/1.1") == 0){
+    versionExtra = "Connection: close\r\n";
+  }
+
+  // Build the response headers assuming max size of 1024
+  snprintf(final_response, 1024,
+          "%s 200 OK\r\n"
+          "Content-Type: text/html; charset=UTF-8\r\n"
+          "Content-Length: %zu\r\n"
+          "%s"
+          "\r\n", version, content_length, versionExtra);
   
+  // Append the body content to the final response
+  strncat(final_response, response, totalBytes);
+
+  // Free the response buffer
+  free(response);
+
+  return final_response;
   
   //return strdup ("HTTP/1.0 404 Not Found" CRLF CRLF);
 

@@ -80,7 +80,7 @@ main ()
   if(file == NULL)
   {
     perror("Error opening data/data.txt");
-    return;
+    return -1;
   }
     
     
@@ -90,7 +90,7 @@ main ()
     printf("      <h2 class=\"mb-0\">Database Records</h2>\n");
     printf("      <div class=\"row\">\n");
     
-    char buffer[1024];
+    //char buffer[1024]; Do we need this?
     char fileName[100]; //file name such as index.html
     char hashInput[200]; //hash from the file
     int i = 1; //boolean for if it is the first class name to appear in the output. in this case it is "row".

@@ -67,7 +67,10 @@ serve_request (int connfd)
     response = body;
   } else if(strstr(uri, "cgi-bin"))
   {
-    cgi_response(uri, version, method, query, size, boundary, body);
+    response = cgi_response(uri, version, method, query, size, boundary, body);
+  } else {
+    perror("Invalid uri");
+    return;
   }
 
   write (connfd, response, strlen (response));
@@ -76,8 +79,8 @@ serve_request (int connfd)
   // TODO [PART]: If the URI is for the shutdown.cgi file, kill the current
   // process with the SIGUSR1 signal.
     
-  if(uri == "cgi-bin/shutdown.cgi")
-    kill(connfd,"SIGUSR1");
+  if(strcmp(uri, "cgi-bin/shutdown.cgi") == 0)
+    kill(connfd, SIGUSR1);
 
   // Close the connection.
   shutdown (connfd, SHUT_RDWR);
