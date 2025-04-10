@@ -74,6 +74,11 @@ cgi_response (char *uri, char *version, char *method, char *query,
 
     // Redirect stdout to the write end of the pipe
     dup2 (pipefd[1], STDOUT_FILENO);
+    
+    // Prepare arguments and environmentArguments
+    char *arguments[] = { uri, NULL }; // We just need the uri as the argument.
+    char *environmentArguments[10]; // We should never have more than 10 arguments.
+    int currentArgument = 0;
 
     // Create the enviroment variable
     char QUERY_STRING[1024];
@@ -83,67 +88,47 @@ cgi_response (char *uri, char *version, char *method, char *query,
     } else if (strcmp(method, "POST") == 0) // POST method environmentArgument
     {
       
+      // Clone the body so we can safely modify it. strtok inserts \0 into the body.
+      char *body_copy = strdup(body);
+      if(body_copy != NULL && boundary != NULL)
+      {
+        char *key = strtok(body_copy, boundary); //first one
+        // Loop through until we have all the environment variables.
+        while (key != NULL) {
+          key = strtok(NULL, "name=\""); //Read in everything before the name of the variable
+          key = strtok(NULL, "\"\r\n"); //Read in the name of the variable
+
+          char *value = strtok(NULL, "\r\n"); //Read in the first new line.
+          value = strtok(NULL, "\r\n"); //Read in the next new line that contains the value.
+          printf("DEBUG key : %s\nDEBUG value : %s\n", key, value);
+          
+          // Set variables based on what key was read in.
+          if(key && value){
+            // Create the enviroment variable
+            char var[1024];
+
+            // Copy the hash into the environment arguments. hash = value;
+            snprintf(var, sizeof(var), "%s=%s", key, value);
+
+            // Add it to the arguments array.
+            environmentArguments[currentArgument] = var;
+            currentArgument++;
+
+            // Get the next boundary
+            key = strtok(NULL, boundary);
+          }
+        }
+      }
+      free(body_copy);
     } else {
       perror("Invalid Method.");
       exit(1);
     }
 
-    // Prepare arguments and environmentArguments
-    char *arguments[] = { uri, NULL }; // We just need the uri as the argument.
-    char *environmentArguments[10]; // We should never have more than 10 arguments.
-    int currentArgument = 0;
-
     // If there is a query to read we add it to the argument array.
     if(query != NULL){
       environmentArguments[currentArgument] = QUERY_STRING;
       currentArgument++;
-    }
-
-    // Loop through until we have all the environment variables.
-    if(body != NULL && boundary != NULL)
-    {
-      char *key = strtok(body, "="); //first one
-      while (key != NULL) {
-      // Take the token and split it so we can figure out what it is. Splitting on the = symbol allow us to seperate it from the value.
-      // We do this because we don't know what order or what were actually getting.
-      // We could get just record, or just the hash so we have to search specifically for each field.
-      char *value = strtok(NULL, boundary); //second one
-        // Set variables based on what key was read in.
-        if (strcmp(key, "db") == 0){
-          // Create the enviroment variable
-          char db[1024];
-
-          // Copy the db into the environment arguments. db = value;
-          snprintf(db, sizeof(db), "db=%s", value);
-
-          // Add it to the arguments array.
-          environmentArguments[currentArgument] = db;
-          currentArgument++;
-        }
-        else if (strcmp(key, "record") == 0){
-          // Create the enviroment variable
-          char record[1024];
-
-          // Copy the record into the environment arguments. record = value;
-          snprintf(record, sizeof(record), "record=%s", value);
-
-          // Add it to the arguments array.
-          environmentArguments[currentArgument] = record;
-          currentArgument++;
-        }
-        else if (strcmp(key, "hash") == 0){
-          // Create the enviroment variable
-          char hash[1024];
-
-          // Copy the hash into the environment arguments. hash = value;
-          snprintf(hash, sizeof(hash), "hash=%s", value);
-
-          // Add it to the arguments array.
-          environmentArguments[currentArgument] = hash;
-          currentArgument++;
-        }   
-        key = strtok(NULL, "=");
-      }
     }
 
     // Null at the end of arguments to represent when they end.
