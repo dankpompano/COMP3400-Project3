@@ -60,11 +60,10 @@ serve_request (int connfd)
   // the query string will need to be passed using an environment variable
   // called "QUERY_STRING".
 
-  //char *response = html_response (uri, version);
   char *response;
 
   if(strstr(uri, "srv_root") != NULL){
-    response = body;
+    response = html_response(uri, version);
   } else if(strstr(uri, "cgi-bin"))
   {
     response = cgi_response(uri, version, method, query, size, boundary, body);
@@ -78,9 +77,10 @@ serve_request (int connfd)
 
   // TODO [PART]: If the URI is for the shutdown.cgi file, kill the current
   // process with the SIGUSR1 signal.
-    
+  
+  // getpid() gives us the current process to kill.
   if(strcmp(uri, "cgi-bin/shutdown.cgi") == 0)
-    kill(connfd, SIGUSR1);
+    kill(getpid(), SIGUSR1);
 
   // Close the connection.
   shutdown (connfd, SHUT_RDWR);

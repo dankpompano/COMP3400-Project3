@@ -90,14 +90,18 @@ cgi_response (char *uri, char *version, char *method, char *query,
 
     // Prepare arguments and environmentArguments
     char *arguments[] = { uri, NULL }; // We just need the uri as the argument.
-    char *environmentArguments[2];
-    if(query == NULL){
-      // If there is no query to read then there is no reason to send anything other than NULL.
-      environmentArguments[0] = NULL;
-    } else {
-      environmentArguments[0] = QUERY_STRING;  // Null at the end of both arguments to represent when they end.
-      environmentArguments[1] = NULL;  // Null at the end of both arguments to represent when they end.
+    char *environmentArguments[10]; // We should never have more than 10 arguments.
+    int currentArgument = 0;
+
+    // If there is a query to read we add it to the argument array.
+    if(query != NULL){
+      environmentArguments[currentArgument] = QUERY_STRING;
+      currentArgument++;
     }
+
+    // Null at the end of arguments to represent when they end.
+    environmentArguments[currentArgument] = NULL;
+    currentArgument++;
 
     // execlp replaces the current running process with a new process. In
     // this case we are replacing it with the cgi uri which refers to the file we are calling
