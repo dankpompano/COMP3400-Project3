@@ -31,11 +31,20 @@ int postParser(char** db, char** hash, char** record, char* body, char* boundary
     location += 6; // Skip over "name=\""
     
     // Check for each possible field
+    printf("Debug: location = %s\n", location); // Debug print
     if (strncmp(location, "db\"", 3) == 0) {
       location += 4; // Skip over the "db" field
       char* dbEND = strstr(location, "\r\n");
       if (dbEND == NULL) break; // Invalid data format, stop processing
       dbEND[0] = '\0'; // Null-terminate the string
+
+      location = dbEND + 2; // Move past the \r\n to the value of db
+
+      // Read in the value stopping at the new line.
+      char* value_end = strstr(location, "\r\n");
+      if (value_end == NULL) break; // No value for db, break
+      value_end[0] = '\0'; // Null-terminate the value of db
+
       *db = strdup(location);
       if (*db == NULL) {
           perror("Failed to allocate memory for db");
@@ -49,6 +58,14 @@ int postParser(char** db, char** hash, char** record, char* body, char* boundary
       char* recordEND = strstr(location, "\r\n");
       if (recordEND == NULL) break;
       recordEND[0] = '\0'; // Null-terminate the string
+
+      location = recordEND + 2; // Move past the \r\n to the value of db
+
+      // Read in the value stopping at the new line.
+      char* value_end = strstr(location, "\r\n");
+      if (value_end == NULL) break; // No value for db, break
+      value_end[0] = '\0'; // Null-terminate the value of db
+
       *record = strdup(location);
       if (*record == NULL) {
           perror("Failed to allocate memory for record");
@@ -62,6 +79,14 @@ int postParser(char** db, char** hash, char** record, char* body, char* boundary
       char* hashEND = strstr(location, "\r\n");
       if (hashEND == NULL) break;
       hashEND[0] = '\0'; // Null-terminate the string
+
+      location = hashEND + 2; // Move past the \r\n to the value of db
+
+      // Read in the value stopping at the new line.
+      char* value_end = strstr(location, "\r\n");
+      if (value_end == NULL) break; // No value for db, break
+      value_end[0] = '\0'; // Null-terminate the value of db
+
       *hash = strdup(location);
       if (*hash == NULL) {
           perror("Failed to allocate memory for hash");
@@ -207,7 +232,6 @@ cgi_response (char *uri, char *version, char *method, char *query,
     // The first parameter is the path to the binary that we want to execute.
     // The second parameter are the arguments we are giving to it including the command name.
     // The third parameter are the environment variables being added onto it.
-    exit(1);
     execve (uri, arguments, environmentArguments);
 
     // Should never get here as it should be in a new process.
