@@ -74,81 +74,36 @@ cgi_response (char *uri, char *version, char *method, char *query,
 
     // Redirect stdout to the write end of the pipe
     dup2 (pipefd[1], STDOUT_FILENO);
-    
-    // Prepare arguments and environmentArguments
-    char *arguments[] = { uri, NULL }; // We just need the uri as the argument.
-    char *environmentArguments[10]; // We should never have more than 10 arguments.
-    int currentArgument = 0;
 
-    // Create the enviroment variable
+    // Create the environment variable
     char QUERY_STRING[1024];
 
     if(strcmp(method, "GET") == 0){ // GET method environmentArgument
       snprintf(QUERY_STRING, sizeof(QUERY_STRING), "QUERY_STRING=%s", query); // Copy the query into the environment arguments.
+      
+      // Prepare arguments and environmentArguments
+      char *arguments[] = { uri, NULL }; // We just need the uri as the argument.
+      char *environmentArguments[] = { QUERY_STRING, NULL };  // Null at the end of both arguments to represent when they end.
+
+      // execlp replaces the current running process with a new process. In
+      // this case we are replacing it with the cgi uri which refers to the file we are calling
+      // The first parameter is the path to the binary that we want to execute.
+      // The second parameter are the arguments we are giving to it including the command name.
+      // The third parameter are the environment variables being added onto it.
+      execve (uri, arguments, environmentArguments);
     } else if (strcmp(method, "POST") == 0) // POST method environmentArgument
     {
       
-      // Clone the body so we can safely modify it. strtok inserts \0 into the body.
-      char *body_copy = strdup(body);
-      if(body_copy != NULL && boundary != NULL)
-      {
-        char *part = strtok(body_copy, boundary); // skip the start.
-        // Loop through until we have all the environment variables.
-        while ((part = strtok(NULL, boundary)) != NULL) {
-          char *key = strtok(part, "\""); // Skip until name=".
-          key = strtok(NULL, "\"");       // Grab the key.
-
-          strtok(NULL, "\r\n");           // Skip \r\n (empty line).
-          char *value = strtok(NULL, "\r\n"); // Grab the value.
-          
-
-
-          // Set variables based on what key was read in.
-          if(key && value){
-            // Create the enviroment variable
-            char *var = malloc(1024);
-
-            // Copy the hash into the environment arguments. hash = value;
-            snprintf(var, 1024, "%s=%s", key, value);
-
-            // Add it to the arguments array.
-            environmentArguments[currentArgument] = var;
-            currentArgument++;
-          }
-        }
-      }
-      free(body_copy);
     } else {
       perror("Invalid Method.");
       exit(1);
     }
 
-    // If there is a query to read we add it to the argument array.
-    if(query != NULL){
-      environmentArguments[currentArgument] = QUERY_STRING;
-      currentArgument++;
-    }
-
-    // Null at the end of arguments to represent when they end.
-    environmentArguments[currentArgument] = NULL;
-    currentArgument++;
-
-    // execlp replaces the current running process with a new process. In
-    // this case we are replacing it with the cgi uri which refers to the file we are calling
-    // The first parameter is the path to the binary that we want to execute.
-    // The second parameter are the arguments we are giving to it including the command name.
-    // The third parameter are the environment variables being added onto it.
-    execve (uri, arguments, environmentArguments);
+   
 
     // Should never get here as it should be in a new process.
     // Only if execlp fails will you get here.
     perror ("execve failed");
-
-    // Free all the arguments in case we failed.
-    for(int i = 0; i < currentArgument; i++) {
-      free(environmentArguments[i]);
-    }
-
     return NULL;
   }
 
@@ -217,4 +172,51 @@ cgi_response (char *uri, char *version, char *method, char *query,
   // variable to be the query parameter. For POST requests, you will need
   // to look through the body of the HTTP request, splitting based on the
   // boundary values (see the project description for an example).
+}
+
+//return the amount that we find
+int postParser(char** db, char** hash, char** record, char* body, char* boundary)
+{
+  int count = 0;
+    // Loop through until we have all the environment variables.
+    if(body != NULL && boundary != NULL)
+    {
+      char* location = strstr(body, boundary);
+      //char *key = strtok(body, "="); //first one
+      //while( key != NULL);
+      while (location != NULL) 
+      {
+      location += strlen(boundary);
+      location = strstr(location, "name=\"");
+      location += 6;
+      
+        // Set variables based on what key was read in.
+        if (strncmp(location, "db\"", 3) == 0)
+        {
+          location += 4; //\r\n\n
+          char* dbEND = strstr(location, "\r\n");
+          dbEND[0] = '\0';
+          *db = strdup(location);
+          count++;
+        }
+        else if (strncmp(key, "record\"", 3) == 0)
+        {
+          location += 4; //\r\n\n
+          char* recordEND = strstr(location, "\r\n");
+          recordEND[0] = '\0';
+          *record = strdup(location);
+          count++;
+        }
+        else if (strncmp(key, "hash\"", 3) == 0)
+        {
+          location += 4; //\r\n\n
+          char* hashEND = strstr(location, "\r\n");
+          hashEND[0] = '\0';
+          *hash = strdup(location);
+          count++;
+        }
+      }
+    }
+  }
+  
 }
