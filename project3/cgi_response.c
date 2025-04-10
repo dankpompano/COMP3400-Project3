@@ -26,82 +26,89 @@ int postParser(char** db, char** hash, char** record, char* body, char* boundary
     // Look for "name=" keyword
     location = strstr(location, "name=\"");
     if (location == NULL) {
-      break; // No more fields to parse
+        break; // No more fields to parse
     }
     location += 6; // Skip over "name=\""
-    
+
+    // Debug print to see what location holds
+    //printf("Debug: location = %s\n", location);
+
     // Check for each possible field
-    printf("Debug: location = %s\n", location); // Debug print
     if (strncmp(location, "db\"", 3) == 0) {
-      location += 4; // Skip over the "db" field
-      char* dbEND = strstr(location, "\r\n");
+      location += 3; // Skip over the "db" field and the quote mark
+      char* dbEND = strstr(location, "\r\n\r\n");
       if (dbEND == NULL) break; // Invalid data format, stop processing
       dbEND[0] = '\0'; // Null-terminate the string
 
-      location = dbEND + 2; // Move past the \r\n to the value of db
+      location = dbEND + 4; // Move past the \r\n to the value of db
 
       // Read in the value stopping at the new line.
+      //printf("Debug: record Location = %s\n", location); // Debug print
       char* value_end = strstr(location, "\r\n");
       if (value_end == NULL) break; // No value for db, break
       value_end[0] = '\0'; // Null-terminate the value of db
 
       *db = strdup(location);
       if (*db == NULL) {
-          perror("Failed to allocate memory for db");
-          return -1; // Return error if strdup fails
+        perror("Failed to allocate memory for db");
+        return -1; // Return error if strdup fails
       }
       count++;
-      printf("Debug: db = %s\n", *db); // Debug print
+      //printf("Debug: db = %s\n", *db); // Debug print
     }
-    else if (strncmp(location, "record\"", 3) == 0) {
-      location += 4; // Skip over the "record" field
-      char* recordEND = strstr(location, "\r\n");
-      if (recordEND == NULL) break;
-      recordEND[0] = '\0'; // Null-terminate the string
-
-      location = recordEND + 2; // Move past the \r\n to the value of db
-
-      // Read in the value stopping at the new line.
-      char* value_end = strstr(location, "\r\n");
-      if (value_end == NULL) break; // No value for db, break
-      value_end[0] = '\0'; // Null-terminate the value of db
-
-      *record = strdup(location);
-      if (*record == NULL) {
-          perror("Failed to allocate memory for record");
-          return -1;
-      }
-      count++;
-      printf("Debug: record = %s\n", *record); // Debug print
-    }
-    else if (strncmp(location, "hash\"", 3) == 0) {
-      location += 4; // Skip over the "hash" field
-      char* hashEND = strstr(location, "\r\n");
+    else if (strncmp(location, "hash\"", 5) == 0) {
+      location += 5; // Skip over the "hash" field and the quote mark
+      char* hashEND = strstr(location, "\r\n\r\n");
       if (hashEND == NULL) break;
       hashEND[0] = '\0'; // Null-terminate the string
 
-      location = hashEND + 2; // Move past the \r\n to the value of db
+      location = hashEND + 4; // Move past the \r\n to the value of hash
 
       // Read in the value stopping at the new line.
+      //printf("Debug: hash Location = %s\n", location); // Debug print
       char* value_end = strstr(location, "\r\n");
-      if (value_end == NULL) break; // No value for db, break
-      value_end[0] = '\0'; // Null-terminate the value of db
+      if (value_end == NULL) break; // No value for hash, break
+      value_end[0] = '\0'; // Null-terminate the value of hash
 
       *hash = strdup(location);
       if (*hash == NULL) {
-          perror("Failed to allocate memory for hash");
-          return -1;
+        perror("Failed to allocate memory for hash");
+        return -1;
       }
       count++;
-      printf("Debug: hash = %s\n", *hash); // Debug print
+      //printf("Debug: hash = %s\n", *hash); // Debug print
     }
-    
-    // Move to the next potential boundary
-    location = strstr(location, boundary);
+    else if (strncmp(location, "record\"", 7) == 0) {
+      location += 7; // Skip over the "record" field and the quote mark
+      char* recordEND = strstr(location, "\r\n\r\n");
+      if (recordEND == NULL) break;
+      recordEND[0] = '\0'; // Null-terminate the string
+
+      location = recordEND + 4; // Move past the \r\n to the value of record
+
+      // Read in the value stopping at the new line.
+      //printf("Debug: record Location = %s\n", location); // Debug print
+      char* value_end = strstr(location, "\r\n");
+      if (value_end == NULL) break; // No value for record, break
+      value_end[0] = '\0'; // Null-terminate the value of record
+
+      *record = strdup(location);
+      if (*record == NULL) {
+        perror("Failed to allocate memory for record");
+        return -1;
+      }
+      count++;
+      //printf("Debug: record = %s\n", *record); // Debug print
+    }
+
+    location++;
+    //printf("Debug: location = %s\n", location); // Debug print
   }
 
   return count;
 }
+
+
 
 
 /* Used to execute a given CGI program in a separate process. Uses the
@@ -185,13 +192,13 @@ cgi_response (char *uri, char *version, char *method, char *query,
       char *body_copy = strdup(body);
       if(body_copy != NULL && boundary != NULL)
       {
-        printf("Debug (POST): Body to parse = %s\n", body);
+        //printf("Debug (POST): Body to parse = %s\n", body);
 
         // Parse POST body with boundary
         char *db = NULL, *hash = NULL, *record = NULL;
         int parsedCount = postParser(&db, &hash, &record, body, boundary); // Parse POST data
         printf("Debug (POST): Parsed %d variables\n", parsedCount);
-        
+
         // Set environment variables for POST
         if (db) {
           char db_env[1024];
