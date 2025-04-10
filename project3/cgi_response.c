@@ -10,6 +10,75 @@
 
 #define CRLF "\r\n"
 
+//return the amount that we find
+int postParser(char** db, char** hash, char** record, char* body, char* boundary)
+{
+  int count = 0;
+  
+  if (body == NULL || boundary == NULL) {
+    return 0; // If body or boundary is NULL, nothing to parse
+  }
+
+  char* location = strstr(body, boundary); // Start looking for the boundary
+  while (location != NULL) {
+    location += strlen(boundary); // Skip the boundary
+    
+    // Look for "name=" keyword
+    location = strstr(location, "name=\"");
+    if (location == NULL) {
+      break; // No more fields to parse
+    }
+    location += 6; // Skip over "name=\""
+    
+    // Check for each possible field
+    if (strncmp(location, "db\"", 3) == 0) {
+      location += 4; // Skip over the "db" field
+      char* dbEND = strstr(location, "\r\n");
+      if (dbEND == NULL) break; // Invalid data format, stop processing
+      dbEND[0] = '\0'; // Null-terminate the string
+      *db = strdup(location);
+      if (*db == NULL) {
+          perror("Failed to allocate memory for db");
+          return -1; // Return error if strdup fails
+      }
+      count++;
+      printf("Debug: db = %s\n", *db); // Debug print
+    }
+    else if (strncmp(location, "record\"", 3) == 0) {
+      location += 4; // Skip over the "record" field
+      char* recordEND = strstr(location, "\r\n");
+      if (recordEND == NULL) break;
+      recordEND[0] = '\0'; // Null-terminate the string
+      *record = strdup(location);
+      if (*record == NULL) {
+          perror("Failed to allocate memory for record");
+          return -1;
+      }
+      count++;
+      printf("Debug: record = %s\n", *record); // Debug print
+    }
+    else if (strncmp(location, "hash\"", 3) == 0) {
+      location += 4; // Skip over the "hash" field
+      char* hashEND = strstr(location, "\r\n");
+      if (hashEND == NULL) break;
+      hashEND[0] = '\0'; // Null-terminate the string
+      *hash = strdup(location);
+      if (*hash == NULL) {
+          perror("Failed to allocate memory for hash");
+          return -1;
+      }
+      count++;
+      printf("Debug: hash = %s\n", *hash); // Debug print
+    }
+    
+    // Move to the next potential boundary
+    location = strstr(location, boundary);
+  }
+
+  return count;
+}
+
+
 /* Used to execute a given CGI program in a separate process. Uses the
    version parameter to build the HTTP header. Other parameters are used
    for the FULL implementation only as follows:
@@ -74,36 +143,82 @@ cgi_response (char *uri, char *version, char *method, char *query,
 
     // Redirect stdout to the write end of the pipe
     dup2 (pipefd[1], STDOUT_FILENO);
+    
+    // Prepare arguments and environmentArguments
+    char *arguments[] = { uri, NULL }; // We just need the uri as the argument.
+    char *environmentArguments[10]; // We should never have more than 10 arguments.
+    int currentArgument = 0;
 
-    // Create the environment variable
+    // Create the enviroment variable
     char QUERY_STRING[1024];
 
     if(strcmp(method, "GET") == 0){ // GET method environmentArgument
       snprintf(QUERY_STRING, sizeof(QUERY_STRING), "QUERY_STRING=%s", query); // Copy the query into the environment arguments.
-      
-      // Prepare arguments and environmentArguments
-      char *arguments[] = { uri, NULL }; // We just need the uri as the argument.
-      char *environmentArguments[] = { QUERY_STRING, NULL };  // Null at the end of both arguments to represent when they end.
-
-      // execlp replaces the current running process with a new process. In
-      // this case we are replacing it with the cgi uri which refers to the file we are calling
-      // The first parameter is the path to the binary that we want to execute.
-      // The second parameter are the arguments we are giving to it including the command name.
-      // The third parameter are the environment variables being added onto it.
-      execve (uri, arguments, environmentArguments);
     } else if (strcmp(method, "POST") == 0) // POST method environmentArgument
     {
-      
+      // Clone the body so we can safely modify it. strtok inserts \0 into the body.
+      char *body_copy = strdup(body);
+      if(body_copy != NULL && boundary != NULL)
+      {
+        printf("Debug (POST): Body to parse = %s\n", body);
+
+        // Parse POST body with boundary
+        char *db = NULL, *hash = NULL, *record = NULL;
+        int parsedCount = postParser(&db, &hash, &record, body, boundary); // Parse POST data
+        printf("Debug (POST): Parsed %d variables\n", parsedCount);
+        
+        // Set environment variables for POST
+        if (db) {
+          char db_env[1024];
+          snprintf(db_env, sizeof(db_env), "db=%s", db);
+          environmentArguments[currentArgument++] = strdup(db_env);
+          free(db);  // Free after setting the environment variable
+        }
+        if (record) {
+          char record_env[1024];
+          snprintf(record_env, sizeof(record_env), "record=%s", record);
+          environmentArguments[currentArgument++] = strdup(record_env);
+          free(record);  // Free after setting the environment variable
+        }
+        if (hash) {
+          char hash_env[1024];
+          snprintf(hash_env, sizeof(hash_env), "hash=%s", hash);
+          environmentArguments[currentArgument++] = strdup(hash_env);
+          free(hash);  // Free after setting the environment variable
+        }
+      }
     } else {
       perror("Invalid Method.");
       exit(1);
     }
 
-   
+    // If there is a query to read we add it to the argument array.
+    if(query != NULL){
+      environmentArguments[currentArgument] = QUERY_STRING;
+      currentArgument++;
+    }
+
+    // Null at the end of arguments to represent when they end.
+    environmentArguments[currentArgument] = NULL;
+    currentArgument++;
+
+    // execlp replaces the current running process with a new process. In
+    // this case we are replacing it with the cgi uri which refers to the file we are calling
+    // The first parameter is the path to the binary that we want to execute.
+    // The second parameter are the arguments we are giving to it including the command name.
+    // The third parameter are the environment variables being added onto it.
+    exit(1);
+    execve (uri, arguments, environmentArguments);
 
     // Should never get here as it should be in a new process.
     // Only if execlp fails will you get here.
     perror ("execve failed");
+
+    // Free all the arguments in case we failed.
+    for(int i = 0; i < currentArgument; i++) {
+      free(environmentArguments[i]);
+    }
+
     return NULL;
   }
 
@@ -172,51 +287,4 @@ cgi_response (char *uri, char *version, char *method, char *query,
   // variable to be the query parameter. For POST requests, you will need
   // to look through the body of the HTTP request, splitting based on the
   // boundary values (see the project description for an example).
-}
-
-//return the amount that we find
-int postParser(char** db, char** hash, char** record, char* body, char* boundary)
-{
-  int count = 0;
-    // Loop through until we have all the environment variables.
-    if(body != NULL && boundary != NULL)
-    {
-      char* location = strstr(body, boundary);
-      //char *key = strtok(body, "="); //first one
-      //while( key != NULL);
-      while (location != NULL) 
-      {
-      location += strlen(boundary);
-      location = strstr(location, "name=\"");
-      location += 6;
-      
-        // Set variables based on what key was read in.
-        if (strncmp(location, "db\"", 3) == 0)
-        {
-          location += 4; //\r\n\n
-          char* dbEND = strstr(location, "\r\n");
-          dbEND[0] = '\0';
-          *db = strdup(location);
-          count++;
-        }
-        else if (strncmp(key, "record\"", 3) == 0)
-        {
-          location += 4; //\r\n\n
-          char* recordEND = strstr(location, "\r\n");
-          recordEND[0] = '\0';
-          *record = strdup(location);
-          count++;
-        }
-        else if (strncmp(key, "hash\"", 3) == 0)
-        {
-          location += 4; //\r\n\n
-          char* hashEND = strstr(location, "\r\n");
-          hashEND[0] = '\0';
-          *hash = strdup(location);
-          count++;
-        }
-      }
-    }
-  }
-  
 }
