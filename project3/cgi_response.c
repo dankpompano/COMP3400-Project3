@@ -92,30 +92,28 @@ cgi_response (char *uri, char *version, char *method, char *query,
       char *body_copy = strdup(body);
       if(body_copy != NULL && boundary != NULL)
       {
-        char *key = strtok(body_copy, boundary); //first one
+        char *part = strtok(body_copy, boundary); // skip the start.
         // Loop through until we have all the environment variables.
-        while (key != NULL) {
-          key = strtok(NULL, "name=\""); //Read in everything before the name of the variable
-          key = strtok(NULL, "\"\r\n"); //Read in the name of the variable
+        while ((part = strtok(NULL, boundary)) != NULL) {
+          char *key = strtok(part, "\""); // Skip until name=".
+          key = strtok(NULL, "\"");       // Grab the key.
 
-          char *value = strtok(NULL, "\r\n"); //Read in the first new line.
-          value = strtok(NULL, "\r\n"); //Read in the next new line that contains the value.
-          printf("DEBUG key : %s\nDEBUG value : %s\n", key, value);
+          strtok(NULL, "\r\n");           // Skip \r\n (empty line).
+          char *value = strtok(NULL, "\r\n"); // Grab the value.
           
+
+
           // Set variables based on what key was read in.
           if(key && value){
             // Create the enviroment variable
-            char var[1024];
+            char *var = malloc(1024);
 
             // Copy the hash into the environment arguments. hash = value;
-            snprintf(var, sizeof(var), "%s=%s", key, value);
+            snprintf(var, 1024, "%s=%s", key, value);
 
             // Add it to the arguments array.
             environmentArguments[currentArgument] = var;
             currentArgument++;
-
-            // Get the next boundary
-            key = strtok(NULL, boundary);
           }
         }
       }
@@ -145,6 +143,12 @@ cgi_response (char *uri, char *version, char *method, char *query,
     // Should never get here as it should be in a new process.
     // Only if execlp fails will you get here.
     perror ("execve failed");
+
+    // Free all the arguments in case we failed.
+    for(int i = 0; i < currentArgument; i++) {
+      free(environmentArguments[i]);
+    }
+
     return NULL;
   }
 
